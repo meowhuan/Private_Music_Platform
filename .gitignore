@@ -1,0 +1,49 @@
+# Node / Vite
+node_modules/
+.pnpm-debug.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-store/
+
+# Build outputs
+/dist/
+/vite.config.js.timestamp-*
+
+# Env
+.env
+.env.local
+.env.*.local
+backend/.env
+
+# Rust / Cargo
+backend/target/
+**/target/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+logs/
+*.log
+
+# Frontend cache
+.eslintcache
+
+# Upload storage
+storage/
+backend/storage/
+backend/storage/**
+
+# SQLx
+.sqlx/
+
+# Coverage
+coverage/
