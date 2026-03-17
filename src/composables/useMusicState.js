@@ -12,6 +12,7 @@ const createState = () => {
   const authLoading = ref(false);
   const authError = ref("");
   const authUsername = ref(typeof window !== "undefined" ? window.localStorage.getItem("music-username") || "" : "");
+  const authIsAdmin = ref(typeof window !== "undefined" ? window.localStorage.getItem("music-is-admin") === "1" : false);
   const userCreateForm = ref({ username: "", password: "" });
   const userCreateLoading = ref(false);
   const userCreateError = ref("");
@@ -168,7 +169,8 @@ const createState = () => {
   const apiBaseValid = computed(() => apiBase.startsWith("http://") || apiBase.startsWith("https://"));
   const isAuthed = computed(() => Boolean(authToken.value));
   const isAdmin = computed(() => {
-    const name = (authUsername.value || loginForm.value.username || "").trim().toLowerCase();
+    if (authIsAdmin.value) return true;
+    const name = (authUsername.value || loginForm.value.username || "").trim();
     return name === "admin";
   });
   const resolveCoverUrl = (url) => {
@@ -554,10 +556,12 @@ const createState = () => {
       }
       const data = await response.json();
       authToken.value = data.token;
-      authUsername.value = loginForm.value.username;
+      authUsername.value = data.user?.username || loginForm.value.username;
+      authIsAdmin.value = Boolean(data.user?.is_admin);
       if (typeof window !== "undefined") {
         window.localStorage.setItem("music-token", data.token);
         window.localStorage.setItem("music-username", authUsername.value);
+        window.localStorage.setItem("music-is-admin", authIsAdmin.value ? "1" : "0");
       }
       loadNeteaseCookie();
       await fetchAll(true);
@@ -681,9 +685,11 @@ const createState = () => {
   const logout = () => {
     authToken.value = "";
     authUsername.value = "";
+    authIsAdmin.value = false;
     if (typeof window !== "undefined") {
       window.localStorage.removeItem("music-token");
       window.localStorage.removeItem("music-username");
+      window.localStorage.removeItem("music-is-admin");
     }
     lyricCache.value = {};
     if (typeof window !== "undefined") {
@@ -2070,6 +2076,7 @@ const createState = () => {
     authLoading,
     authError,
     authUsername,
+    authIsAdmin,
     isAdmin,
     resolveCoverUrl,
     loginForm,

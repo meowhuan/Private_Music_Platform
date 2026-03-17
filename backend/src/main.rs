@@ -126,7 +126,8 @@ struct LoginResponse {
 
 #[derive(Serialize)]
 struct UserInfo {
-  username: String
+  username: String,
+  is_admin: bool
 }
 
 #[derive(Serialize)]
@@ -750,12 +751,18 @@ async fn login(State(state): State<AppState>, Json(payload): Json<LoginRequest>)
   Ok(Json(LoginResponse {
     token,
     expires_in: 7 * 24 * 3600,
-    user: UserInfo { username: payload.username }
+    user: UserInfo {
+      username: payload.username,
+      is_admin: payload.username == state.config.admin_username
+    }
   }))
 }
 
-async fn me(_user: AuthUser) -> Json<UserInfo> {
-  Json(UserInfo { username: _user.username })
+async fn me(State(state): State<AppState>, _user: AuthUser) -> Json<UserInfo> {
+  Json(UserInfo {
+    username: _user.username.clone(),
+    is_admin: _user.username == state.config.admin_username
+  })
 }
 
 async fn user_create(
