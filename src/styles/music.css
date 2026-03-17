@@ -1858,6 +1858,18 @@
     height: 80px;
   }
 
+  .player-greeting {
+    width: 100%;
+  }
+
+  .flip-clock {
+    flex-wrap: wrap;
+  }
+
+  .player-greeting-sub {
+    margin-top: 6px;
+  }
+
   .home-grid,
   .home-stack,
   .player-stack,
@@ -1958,6 +1970,12 @@
 
 .meow-night .mobile-nav-link.router-link-active {
   color: #f3e9ff;
+}
+
+@media (min-width: 768px) {
+  .mobile-nav {
+    display: none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
