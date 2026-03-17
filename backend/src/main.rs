@@ -748,13 +748,12 @@ async fn login(State(state): State<AppState>, Json(payload): Json<LoginRequest>)
   let token = encode(&Header::default(), &claims, &EncodingKey::from_secret(state.config.jwt_secret.as_bytes()))
     .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, Json(ErrorResponse::new("Token error"))))?;
 
+  let username = payload.username;
+  let is_admin = username == state.config.admin_username;
   Ok(Json(LoginResponse {
     token,
     expires_in: 7 * 24 * 3600,
-    user: UserInfo {
-      username: payload.username,
-      is_admin: payload.username == state.config.admin_username
-    }
+    user: UserInfo { username, is_admin }
   }))
 }
 
