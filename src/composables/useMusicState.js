@@ -1096,6 +1096,18 @@ const createState = () => {
 
   const resolveTrackUrl = async (item) => {
     if (item.source === "local") {
+      try {
+        const resp = await fetch(apiUrl(`/api/local/url/${item.id}`), {
+          headers: { Authorization: `Bearer ${authToken.value}` }
+        });
+        if (resp.ok) {
+          const data = await resp.json();
+          if (data?.url) {
+            if (data.url.startsWith("http")) return data.url;
+            return apiUrl(data.url);
+          }
+        }
+      } catch {}
       return apiUrl(`/api/stream/${item.id}`);
     }
     if (!requireNetease("网易云播放")) return null;

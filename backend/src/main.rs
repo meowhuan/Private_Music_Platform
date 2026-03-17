@@ -40,7 +40,8 @@ struct Config {
   music_storage_dir: PathBuf,
   netease_base_url: String,
   bind_addr: String,
-  cors_origin: Option<String>
+  cors_origin: Option<String>,
+  public_media_base: Option<String>
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -451,6 +452,7 @@ async fn main() -> anyhow::Result<()> {
     .route("/api/tracks/:id", get(track_detail))
     .route("/api/tracks/:id", post(track_update).delete(track_delete))
     .route("/api/stream/:id", get(stream_track))
+    .route("/api/local/url/:id", get(local_track_url))
     .route("/api/lyric/local/:id", get(local_lyric))
     .route("/api/devices", get(devices).post(device_create))
     .route("/api/devices/:id/sync", post(device_sync))
@@ -487,6 +489,7 @@ fn load_config() -> anyhow::Result<Config> {
   let netease_base_url = std::env::var("NETEASE_BASE_URL").unwrap_or_else(|_| "https://musicapi.meowra.cn".to_string());
   let bind_addr = std::env::var("BIND_ADDR").unwrap_or_else(|_| "0.0.0.0:8080".to_string());
   let cors_origin = std::env::var("CORS_ORIGIN").ok();
+  let public_media_base = std::env::var("PUBLIC_MEDIA_BASE").ok();
 
   Ok(Config {
     database_url,
@@ -496,7 +499,8 @@ fn load_config() -> anyhow::Result<Config> {
     music_storage_dir: PathBuf::from(music_storage_dir),
     netease_base_url,
     bind_addr,
-    cors_origin
+    cors_origin,
+    public_media_base
   })
 }
 
@@ -1582,6 +1586,36 @@ async fn stream_track(State(state): State<AppState>, user: AuthUser, Path(id): P
   headers.insert(header::ACCEPT_RANGES, HeaderValue::from_static("bytes"));
   headers.insert(header::CONTENT_LENGTH, HeaderValue::from_str(&file_size.to_string()).unwrap());
   Ok(response)
+}
+
+async fn local_track_url(State(state): State<AppState>, user: AuthUser, Path(id): Path<String>) -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
+  let row = sqlx::query("SELECT file_path FROM tracks WHERE id = ? AND user_id = ? LIMIT 1")
+    .bind(&id)
+    .bind(&user.user_id)
+    .fetch_optional(&state.db)
+    .await
+    .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, Json(ErrorResponse::new("Database error"))))?;
+
+  let Some(row) = row else {
+    return Err((StatusCode::NOT_FOUND, Json(ErrorResponse::new("Track not found"))));
+  };
+  let file_path: Option<String> = row.try_get("file_path").ok();
+  let Some(file_path) = file_path else {
+    return Err((StatusCode::BAD_REQUEST, Json(ErrorResponse::new("Track has no file"))));
+  };
+  let path = PathBuf::from(file_path);
+  let file_name = path.file_name().and_then(|n| n.to_str()).unwrap_or("").to_string();
+  if file_name.is_empty() {
+    return Err((StatusCode::BAD_REQUEST, Json(ErrorResponse::new("Invalid file path"))));
+  }
+
+  if let Some(base) = &state.config.public_media_base {
+    let base = base.trim_end_matches('/');
+    let url = format!("{}/{}", base, file_name);
+    return Ok(Json(json!({ "url": url, "public": true })));
+  }
+
+  Ok(Json(json!({ "url": format!("/api/stream/{}", id), "public": false })))
 }
 
 async fn local_lyric(State(state): State<AppState>, user: AuthUser, Path(id): Path<String>) -> Result<axum::response::Response, (StatusCode, Json<ErrorResponse>)> {

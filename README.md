@@ -55,6 +55,7 @@ ADMIN_PASSWORD=replace_with_strong_password
 MUSIC_STORAGE_DIR=./storage/music
 NETEASE_BASE_URL=https://your_neteasemusicapi.com
 BIND_ADDR=0.0.0.0:8080
+PUBLIC_MEDIA_BASE=https://your-domain.com/media
 ```
 3. 运行
 ```
@@ -76,7 +77,15 @@ cargo run
 上传音乐时可附带封面文件字段 `cover`（image/*）。  
 未上传时会根据歌曲标题与艺人自动从网易云搜索封面。
 
-## 设备与同步
+## 本地音乐直链（可选）
+如需避免本地音乐走 `/api/stream` 流式代理，可配置 `PUBLIC_MEDIA_BASE`，
+并由反代/静态服务直接暴露 `MUSIC_STORAGE_DIR` 目录下的音频文件：
+
+- 例如：`PUBLIC_MEDIA_BASE=https://your-domain.com/media`
+- 确保 `https://your-domain.com/media/<文件名>` 可直接访问
+- 前端会优先请求 `/api/local/url/:id` 并播放返回的直链
+
+## 设备与同步（方案B）
 ### 管理端注册设备（仅管理员可用）
 页面：设备与同步  
 创建设备后会返回一次性 `device_token`，请保存并发给设备端。
@@ -101,7 +110,6 @@ Body(JSON):
 ## 本地上传与歌词
 - 上传音频时会尝试读取标签（标题/艺人/专辑）并写入数据库  
 - 支持同名歌词 `.lrc/.txt` 或内嵌歌词  
-- 本地音频文件保存到 `storage/music`
 - 本地歌词文件会保存到 `storage/music/lyrics/{track_id}.lrc`
 
 ## 常用接口（前端使用）
