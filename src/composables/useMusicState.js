@@ -1099,6 +1099,17 @@ const createState = () => {
       return apiUrl(`/api/stream/${item.id}`);
     }
     if (!requireNetease("网易云播放")) return null;
+    try {
+      const data = await apiGet("/api/netease/song/url/v1", {
+        id: item.source_id || item.id,
+        level: neteaseQualityLevel.value || "exhigh",
+        unblock: "true",
+        timestamp: Date.now(),
+        cookie: buildNeteaseCookie() || undefined
+      });
+      const url = data?.data?.[0]?.url;
+      if (url) return url;
+    } catch {}
     return apiUrl("/api/netease/stream", {
       id: item.source_id || item.id,
       level: neteaseQualityLevel.value || "exhigh",
